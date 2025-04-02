@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// User profile models
+model UserProfile {
+  id                    String   @id @default(uuid())
+  featured_items        Json?
+  featured_achievements Json?
+  username              String?
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// Marketplace models
+model User {
+  address          String @id
+  cards            Int    @default(0)
+  level            Int    @default(0)
+  totalListed      Int    @default(0)
+  totalSold        Int    @default(0)
+  totalSoldValue   BigInt @default(0)
+  totalBought      Int    @default(0)
+  totalBoughtValue BigInt @default(0)
+}
+
+enum ActivityType {
+  LIST
+  BUY
+  SELL
+  DELIST
+  ACCEPT_BID
+  PLACE_BID
+  CANCEL_BID
+  UPDATE
+}
+
+model Activity {
+  txid                    String           @id
+  time                    DateTime
+  nft                     UniversalNFTData @relation(fields: [universalNFTDataAddress], references: [address])
+  amount                  BigInt?
+  type                    ActivityType
+  from                    String
+  to                      String?
+  universalNFTDataAddress String
+}
+
+model UniversalNFTData {
+  address    String     @id
+  owner      String
+  name       String
+  image      String
+  price      BigInt?
+  time       Int?
+  lastSale   BigInt     @default(0)
+  offers     Offer[]
+  listed     Boolean
+  metadata   Metadata[]
+  activity   Activity[]
+  burned     Boolean    @default(false)
+  properties Json?
+}
+
+model Collection {
+  address String   @id
+  id      String
+  filters Json?
+  Memory  Memory[]
+}
+
+model Metadata {
+  id                      String            @id @default(uuid())
+  key                     String
+  value                   String
+  UniversalNFTData        UniversalNFTData? @relation(fields: [universalNFTDataAddress], references: [address])
+  universalNFTDataAddress String?
+}
+
+model Offer {
+  address                 String            @id
+  nftMint                 String
+  bidAmount               BigInt
+  bidder                  String
+  updatedAt               String
+  expiry                  String
+  image                   String
+  name                    String
+  UniversalNFTData        UniversalNFTData? @relation(fields: [universalNFTDataAddress], references: [address])
+  universalNFTDataAddress String?
+}
+
+model Memory {
+  name              String      @id
+  value             String
+  collection        Collection? @relation(fields: [collectionAddress], references: [address])
+  collectionAddress String?
+}
+
+/// Vending machine models
+model collections {
+  mint_address        String   @id
+  merkle_tree_address String?
+  name                String?
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  symbol              String?
+  platform            String?  @default("devnet")
+  mint_price          Decimal?
+  crossmint_id        String?
+  enable              Boolean? @default(false)
+  nfts                nfts[]
+  description         String?
+  rarity_distribution Json?
+
+  @@map("collections")
+}
+
+model nfts {
+  id            BigInt      @default(autoincrement())
+  collection_id String      @default("")
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  mint_address  String?
+  is_available  Boolean?    @default(true)
+  metadata_uri  String?
+  image_uri     String?
+  metadata      Json?
+  buyback_price Decimal?
+  collection    collections @relation(fields: [collection_id], references: [mint_address], onDelete: NoAction, onUpdate: NoAction, map: "nft_collection_id_fkey")
+  rarity        BigInt?
+
+  @@id([id, collection_id])
+  @@map("nfts")
+}
+
+model vm_txs {
+  id              BigInt   @id @default(autoincrement())
+  hash            String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  transfer_amount Decimal?
+  sender          String?
+  mint_state      String?
+  nfts            Json?
+
+  @@map("vm_txs")
+}
+
+model vm_buybacks {
+  id           BigInt   @id @default(autoincrement())
+  hash         String?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  seller       String?
+  mint_address String?
+  nft          Json?
+}
+
+model vm_burns {
+  id            BigInt   @id @default(autoincrement())
+  // vm_buyback_id is the id of the vm_buyback that this burn is associated with
+  vm_buyback_id BigInt
+  hash          String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  seller        String?
+  mint_address  String?
+  nft           Json?
+}
