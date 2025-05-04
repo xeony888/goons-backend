@@ -27,7 +27,7 @@ app.use("/api/marketplace", verifySignature, marketplaceRoutes)
 const FIVE_SECONDS = 5000;
 const ONE_MINUTE = FIVE_SECONDS * 12;
 const TWENTY_SECONDS = FIVE_SECONDS * 4;
-async function main() {
+async function setUpWebsocket() {
     socket = new WebSocket("wss://api.mainnet.tensordev.io/ws", {
         headers: {
             "x-tensor-api-key": process.env.TENSOR_API_KEY,
@@ -140,12 +140,15 @@ async function main() {
         }
     });
 }
-async function data() {
+async function main() {
     await fetchCollections(COLLECTION_ADDRESSES);
-
+    console.log("Collections fetched");
+    setUpWebsocket();
+    console.log("Websocket set up");
     await fetchActivityPeriodic();
-    await fetchUserCardsPeriodic();
     console.log("Activity fetched");
+    await fetchUserCardsPeriodic();
+    console.log("User cards fetched");
     while (true) {
         try {
             await fetchMarketplaceData();
@@ -162,7 +165,6 @@ function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 main();
-data();
 function cleanUp() {
     if (pingTimeoutId !== null) {
         clearTimeout(pingTimeoutId);

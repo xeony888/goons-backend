@@ -9,7 +9,6 @@ import { different, differentMetadata, differentOffers, options } from "./utils"
 export async function fetchCollections(collectionAddresses: string[]) {
     const collections = await prisma.collection.findMany();
     const newAddresses = collectionAddresses.filter((address) => !collections.find((collection) => collection.address === address));
-    console.log(newAddresses);
     for (const address of newAddresses) {
         let collId: string | undefined = undefined;
         while (!collId) {

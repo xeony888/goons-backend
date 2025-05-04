@@ -5,7 +5,8 @@ import { fetchDigitalAsset } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { dasApi } from "@metaplex-foundation/digital-asset-standard-api";
-
+import dotenv from "dotenv";
+dotenv.config();
 export const options = {
     method: "GET",
     headers: {
@@ -48,6 +49,7 @@ export function differentOffers(nft1: UniversalNFTDataWithOffersAndMetadata, nft
     }
     return nft1.offers.length !== nft2.offers.length;
 }
+
 const umi = createUmi(process.env.SOLANA_RPC_URL!).use(dasApi());
 export async function fetchNft(address: string, owner?: string, listed?: boolean): Promise<{ nft: UniversalNFTData; inCollection: boolean }> {
     const nft = await prisma.universalNFTData.findUnique({ where: { address } });
