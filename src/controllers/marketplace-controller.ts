@@ -195,6 +195,7 @@ export const getUserOffers = async (req: Request, res: Response) => {
 export const getMarketplaceListings = async (req: Request, res: Response) => {
     try {
         const { searchTerm, sortBy, page, itemsPerPage, metadataConditions, priceRange } = req.query;
+        console.log(`Data: ${searchTerm}, ${sortBy}, ${page}, ${itemsPerPage}, ${metadataConditions}, ${priceRange}`)
         const conditions = JSON.parse(metadataConditions as string);
         const prices = JSON.parse(priceRange as string);
         const skip = parseInt(page as string) * parseInt(itemsPerPage as string);

@@ -30,32 +30,50 @@ export async function fetchAllCollectionMintsFromTensor(): Promise<CollectionMin
 
 export async function fetchAllMintMetadata(mints: CollectionMintNftResponse[]): Promise<Map<string, any>> {
     const nftAddressToMetadata: Map<string, any> = new Map();
-    await Promise.all(
-        mints.map(async (mint) => {
-            let retries = 3;
-            while (retries > 0) {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000);
-                    const fetchResult = await fetch(mint.metadataUri, {
-                        signal: controller.signal,
-                    });
-                    clearTimeout(timeoutId);
-                    if (!fetchResult.ok) throw new Error(`HTTP error! status: ${fetchResult.status}`);
-                    const metadata = await fetchResult.json();
-                    nftAddressToMetadata.set(mint.mint, metadata);
-                    return;
-                } catch (error) {
-                    retries--;
-                    if (retries === 0) {
-                        console.error(`Failed to fetch metadata for ${mint.mint} after 3 retries`);
+    const BATCH_SIZE = 100;
+    const TIMEOUT_MS = 30000;
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const processBatch = async (batch: CollectionMintNftResponse[]) => {
+        await Promise.all(
+            batch.map(async (mint) => {
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+                        const fetchResult = await fetch(mint.metadataUri, {
+                            signal: controller.signal,
+                        });
+                        clearTimeout(timeoutId);
+                        if (!fetchResult.ok) throw new Error(`HTTP error! status: ${fetchResult.status}`);
+
+                        const contentType = fetchResult.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const metadata = await fetchResult.json();
+                            nftAddressToMetadata.set(mint.mint, metadata);
+                        } else {
+                            console.error(`Unexpected content-type for ${mint.mint}: ${contentType}`);
+                        }
                         return;
+                    } catch (error) {
+                        retries--;
+                        if (retries === 0) {
+                            console.error(error);
+                            console.error(`Failed to fetch metadata for ${mint.mint} after 3 retries`);
+                            return;
+                        }
+                        await sleep(2000);
                     }
-                    await new Promise((resolve) => setTimeout(resolve, 2000));
                 }
-            }
-        }),
-    );
+            })
+        );
+    };
+
+    for (let i = 0; i < mints.length; i += BATCH_SIZE) {
+        const batch = mints.slice(i, i + BATCH_SIZE);
+        await processBatch(batch);
+    }
+
     return nftAddressToMetadata;
 }
 

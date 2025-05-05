@@ -9,7 +9,10 @@ import { PrismaClient } from "@prisma/client";
 import { fetchActivityPeriodic, fetchCollections, fetchMarketplaceData, fetchUserCardsPeriodic } from "./workers";
 import { onAcceptOffer, onBuy, onDelist, onList } from "./handlers";
 import { WebSocketResponse } from "./types";
-
+/// @ts-ignore
+BigInt.prototype.toJSON = function () {
+    return this.toString();
+};
 dotenv.config();
 let lastPongReceived: any = null;
 let pingTimeoutId: any = null;
