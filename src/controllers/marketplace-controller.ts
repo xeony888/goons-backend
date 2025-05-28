@@ -27,8 +27,10 @@ export const getListTransaction = async (req: Request, res: Response) => {
 export const getBuyTransaction = async (req: Request, res: Response) => {
     try {
         const { buyer, mint, owner, maxPrice } = req.query;
+        console.log({ buyer, mint, owner, maxPrice });
         const blockhash = await connection.getLatestBlockhash();
         const url = `https://api.mainnet.tensordev.io/api/v1/tx/buy?buyer=${buyer}&mint=${mint}&owner=${owner}&maxPrice=${maxPrice}&blockhash=${blockhash.blockhash}`;
+        console.log(url);
         const response = await fetch(url, options);
         const json = await response.json();
         return res.status(200).json(json);
